@@ -1,35 +1,35 @@
-build_asm:
-	nasm -f elf32 ex1.asm
-	ld -m elf_i386 -s -o ex1 ex1.o
 
-all: ex2 install2 ex1	
-	
-install: 
-	install2 install1
-	
-clean:
-	rm -f *.so ex1
+prefix=/tmp
+
+all: ex1 libex2.so
 
 run:
-	./ex1	
-	
-install1: ex1
-	cp ex1 $(PREFIX)/usr/bin/
-	chmod +x $(PREFIX)/usr/bin/ex1	
-	
-install2: ex2
-	cp libex2.so $(PREFIX)/usr/lib/
-	cp ex2.h $(PREFIX)/usr/include/
-	
-ex1: ex2
-	gcc ex1_corrected.c -o ex1 -lex2
+	./ex1
 
-ex2:
-	gcc -shared -o libex2.so -fpic ex2.c
-	
+.PHONE: clean
+
+clean:
+	rm -f *.o libex2.so ex1
+
+install: ex1 libex2.so
+	install -d $(prefix)/usr/bin
+	install -d $(prefix)/usr/lib
+	install -d $(prefix)/usr/include 
+	cp ex1 $(prefix)/usr/bin/
+	cp libex2.so $(prefix)/usr/lib/
+	cp ex2.h $(prefix)/usr/include
+
+
 uninstall:
-	rm $(PREFIX)/usr/lib/libex2.so
-	rm $(PREFIX)/usr/include/ex2.h
-	rm $(PREFIX)/usr/bin/ex1
-	
+	rm -f $(prefix)/usr/bin/ex1
+	rm -f $(prefix)/usr/lib/libex2.so
+	rm -f $(prefix)/usr/include/ex2.h
 
+ex1: ex1_corrected.o | libex2.so
+	gcc -L. -Wall -Wl,-rpath='$$ORIGIN/../lib' -Wl,-rpath='$$ORIGIN' -o ex1 $< -lex2
+
+libex2.so:  ex2.o
+	gcc -shared -o libex2.so ex2.o
+
+%.o : %.c
+	gcc -I. -Wall -c $< -o $@
